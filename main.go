@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -46,9 +47,9 @@ func main() {
 	}
 	defer db.Close()
 
-	// ctx := context.Background()
+	ctx := context.Background()
 
-	query, err := db.Query("SELECT * FROM users")
+	query, err := db.Query(ctx, "SELECT * FROM users")
 	if err != nil {
 		log.Fatalf("db.Query: %v", err)
 	}
