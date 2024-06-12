@@ -15,15 +15,15 @@ var (
 	PGUSER     = os.Getenv("PGUSER")
 	PGPASSWORD = os.Getenv("PGPASSWORD")
 	PGHOST     = os.Getenv("PGHOST")
-	PGPORT     = os.Getenv("PGPORT")
+	// PGPORT     = os.Getenv("PGPORT")
 	PGDATABASE = os.Getenv("PGDATABASE")
 )
 
 func main() {
 	// fmt.Println("Connected to the database.")
 	int, _ := os.Hostname()
-	db, err := database.Open("pgx", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&connect_timeout=%d",
-		PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE, 10), int)
+	db, err := database.Open("pgx", fmt.Sprintf("postgres://%s@%s:%s/%s?sslmode=disable&connect_timeout=%d",
+		PGUSER, PGPASSWORD, PGHOST, PGDATABASE, 10), int)
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
