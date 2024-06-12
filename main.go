@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/jvongxay0308/database-go"
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
 )
@@ -29,11 +30,19 @@ func main() {
 	// defer db.Close()
 
 	// fmt.Println("Connected to the database.")
-	dsn := fmt.Sprintf("host=/cloudsql/%s user=%s password=%s dbname=%s sslmode=disable",
-		PGHOST, PGUSER, PGPASSWORD, PGDATABASE)
-	db, err := sql.Open("postgres", dsn)
+	// dsn := fmt.Sprintf("host=/cloudsql/%s user=%s password=%s dbname=%s sslmode=disable",
+	// 	PGHOST, PGUSER, PGPASSWORD, PGDATABASE)
+	// db, err := sql.Open("postgres", dsn)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer db.Close()
+
+	int, _ := os.Hostname()
+	db, err := database.Open("pgx", fmt.Sprintf("postgres://%s:%s@/cloudsql/%s/%s?sslmode=disable&connect_timeout=%d",
+		PGUSER, PGPASSWORD, PGHOST, PGDATABASE, 10), int)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to open database: %v", err)
 	}
 	defer db.Close()
 
