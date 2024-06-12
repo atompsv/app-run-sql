@@ -1,62 +1,65 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/jvongxay0308/database-go"
+	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
 )
 
-func main() {
+var (
+	PGUSER     = os.Getenv("PGUSER")
+	PGPASSWORD = os.Getenv("PGPASSWORD")
+	PGHOST     = os.Getenv("PGHOST")
+	PGPORT     = os.Getenv("PGPORT")
+	PGDATABASE = os.Getenv("PGDATABASE")
+)
 
-	fmt.Println("Starting the application...")
-	// Connect to the database.
-	db, err := connectTCPSocket()
+func main() {
+	// fmt.Println("Connected to the database.")
+	int, _ := os.Hostname()
+	db, err := database.Open("pgx", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&connect_timeout=%d",
+		PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE, 10), int)
 	if err != nil {
-		log.Fatalf("connectTCPSocket: %v", err)
+		log.Fatalf("failed to open database: %v", err)
 	}
 	defer db.Close()
 
-	fmt.Println("Ending the application...")
-	// ...
+	ctx := context.Background()
 
+	app := echo.New()
+	app.GET("/", func(c echo.Context) error {
+		return c.String(200, "Hello, World!")
+	})
+
+	app.GET("/users", func(c echo.Context) error {
+		query, err := db.Query(ctx, "SELECT * FROM users")
+		if err != nil {
+			log.Fatalf("db.Query: %v", err)
+		}
+		defer query.Close()
+
+		users := make([]User, 0)
+		for query.Next() {
+			var user User
+			if err := query.Scan(&user.ID, &user.Name); err != nil {
+				log.Fatalf("query.Scan: %v", err)
+			}
+			users = append(users, user)
+		}
+
+		return c.JSON(200, users)
+	})
+
+	app.Logger.Fatal(app.Start(":8080"))
 	// Use the database connection.
 }
 
-// connectTCPSocket initializes a TCP connection pool for a Cloud SQL
-// instance of MySQL.
-func connectTCPSocket() (*sql.DB, error) {
-	mustGetenv := func(k string) string {
-		v := os.Getenv(k)
-		if v == "" {
-			log.Fatalf("Fatal Error in connect_tcp.go: %s environment variable not set.", k)
-		}
-		return v
-	}
-	// Note: Saving credentials in environment variables is convenient, but not
-	// secure - consider a more secure solution such as
-	// Cloud Secret Manager (https://cloud.google.com/secret-manager) to help
-	// keep secrets safe.
-	var (
-		dbUser    = mustGetenv("DB_USER")       // e.g. 'my-db-user'
-		dbPwd     = mustGetenv("DB_PASS")       // e.g. 'my-db-password'
-		dbName    = mustGetenv("DB_NAME")       // e.g. 'my-database'
-		dbPort    = mustGetenv("DB_PORT")       // e.g. '3306'
-		dbTCPHost = mustGetenv("INSTANCE_HOST") // e.g. '127.0.0.1' ('172.17.0.1' if deployed to GAE Flex)
-	)
-
-	dbURI := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
-		dbUser, dbPwd, dbTCPHost, dbPort, dbName)
-
-	// dbPool is the pool of database connections.
-	dbPool, err := sql.Open("postgres", dbURI)
-	if err != nil {
-		return nil, fmt.Errorf("sql.Open: %w", err)
-	}
-
-	// ...
-
-	return dbPool, nil
+type User struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
