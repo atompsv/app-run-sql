@@ -29,12 +29,11 @@ func main() {
 	// defer db.Close()
 
 	// fmt.Println("Connected to the database.")
-	dns := fmt.Sprintf("%s:%s@unix(%s)/%s?sslmode=disable",
-		PGUSER, PGPASSWORD, PGHOST, PGDATABASE)
-
-	db, err := sql.Open("postgres", dns)
+	dsn := fmt.Sprintf("host=/cloudsql/%s user=%s password=%s dbname=%s sslmode=disable",
+		PGHOST, PGUSER, PGPASSWORD, PGDATABASE)
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatalf("failed to open database: %v", err)
+		log.Fatal(err)
 	}
 	defer db.Close()
 
